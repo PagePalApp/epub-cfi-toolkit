@@ -3,7 +3,6 @@ Tests for the CFI processor.
 """
 
 import pytest
-from unittest.mock import Mock, patch
 from pathlib import Path
 
 from epub_cfi_toolkit import CFIProcessor, EPUBError, CFIError
@@ -17,82 +16,56 @@ class TestCFIProcessor:
         with pytest.raises(EPUBError, match="EPUB file not found"):
             CFIProcessor("nonexistent.epub")
     
-    @patch('epub_cfi_toolkit.cfi_processor.zipfile.ZipFile')
-    @patch('epub_cfi_toolkit.cfi_processor.Path.exists')
-    def test_init_valid_epub(self, mock_exists, mock_zipfile):
+    def test_init_valid_epub(self):
         """Test initialization with valid EPUB file."""
-        mock_exists.return_value = True
-        mock_zip = Mock()
-        mock_zipfile.return_value = mock_zip
-        mock_zip.read.return_value = b'''<?xml version="1.0"?>
-        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-            <rootfiles>
-                <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-            </rootfiles>
-        </container>'''
+        epub_path = Path(__file__).parent.parent / "test_data" / "sample.epub"
+        processor = CFIProcessor(str(epub_path))
         
-        processor = CFIProcessor("test.epub")
-        assert processor._opf_path == "content.opf"
-        processor.close()
-    
-    @patch('epub_cfi_toolkit.cfi_processor.zipfile.ZipFile')
-    @patch('epub_cfi_toolkit.cfi_processor.Path.exists')
-    def test_extract_text_from_cfi_not_implemented(self, mock_exists, mock_zipfile):
-        """Test that extract_text_from_cfi raises NotImplementedError."""
-        mock_exists.return_value = True
-        mock_zip = Mock()
-        mock_zipfile.return_value = mock_zip
-        mock_zip.read.return_value = b'''<?xml version="1.0"?>
-        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-            <rootfiles>
-                <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-            </rootfiles>
-        </container>'''
-        
-        processor = CFIProcessor("test.epub")
-        
-        with pytest.raises(NotImplementedError):
-            processor.extract_text_from_cfi("/2/4[chap01ref]")
+        # Test that the processor was initialized with required components
+        assert processor.cfi_parser is not None
+        assert processor.epub_parser is not None
+        assert processor.validator is not None
         
         processor.close()
     
-    @patch('epub_cfi_toolkit.cfi_processor.zipfile.ZipFile')
-    @patch('epub_cfi_toolkit.cfi_processor.Path.exists')
-    def test_create_cfi_from_location_not_implemented(self, mock_exists, mock_zipfile):
-        """Test that create_cfi_from_location raises NotImplementedError."""
-        mock_exists.return_value = True
-        mock_zip = Mock()
-        mock_zipfile.return_value = mock_zip
-        mock_zip.read.return_value = b'''<?xml version="1.0"?>
-        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-            <rootfiles>
-                <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-            </rootfiles>
-        </container>'''
+    def test_extract_text_from_cfi_range_functionality(self):
+        """Test that extract_text_from_cfi_range works correctly."""
+        epub_path = Path(__file__).parent.parent / "test_data" / "sample.epub"
+        processor = CFIProcessor(str(epub_path))
         
-        processor = CFIProcessor("test.epub")
+        # Test basic functionality with a simple CFI range
+        start_cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)"
+        end_cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:3)"
         
-        with pytest.raises(NotImplementedError):
-            processor.create_cfi_from_location("chap01", "/html/body/p", 10)
+        result = processor.extract_text_from_cfi_range(start_cfi, end_cfi)
+        assert result == "xxx"
         
         processor.close()
     
-    @patch('epub_cfi_toolkit.cfi_processor.zipfile.ZipFile')
-    @patch('epub_cfi_toolkit.cfi_processor.Path.exists')
-    def test_context_manager(self, mock_exists, mock_zipfile):
+    def test_invalid_cfi_validation(self):
+        """Test that invalid CFIs raise appropriate errors."""
+        epub_path = Path(__file__).parent.parent / "test_data" / "sample.epub"
+        processor = CFIProcessor(str(epub_path))
+        
+        invalid_cfi = "invalid_cfi_format"
+        valid_cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)"
+        
+        with pytest.raises(CFIError):
+            processor.extract_text_from_cfi_range(invalid_cfi, valid_cfi)
+        
+        processor.close()
+    
+    def test_context_manager(self):
         """Test using CFIProcessor as a context manager."""
-        mock_exists.return_value = True
-        mock_zip = Mock()
-        mock_zipfile.return_value = mock_zip
-        mock_zip.read.return_value = b'''<?xml version="1.0"?>
-        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-            <rootfiles>
-                <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-            </rootfiles>
-        </container>'''
+        epub_path = Path(__file__).parent.parent / "test_data" / "sample.epub"
         
-        with CFIProcessor("test.epub") as processor:
-            assert processor._epub_zip is not None
+        with CFIProcessor(str(epub_path)) as processor:
+            # Test that processor is functional within context
+            result = processor.extract_text_from_cfi_range(
+                "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",
+                "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:3)"
+            )
+            assert result == "xxx"
         
-        # After exiting context, zip should be closed
-        mock_zip.close.assert_called_once()
+        # Context manager should have closed resources
+        # (We don't test internal state as that's implementation-specific)

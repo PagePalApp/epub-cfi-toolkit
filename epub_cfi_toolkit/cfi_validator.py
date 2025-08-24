@@ -3,7 +3,6 @@ CFI validation functionality for EPUB Canonical Fragment Identifiers.
 """
 
 import re
-from typing import bool
 
 from .exceptions import CFIValidationError
 
@@ -13,9 +12,14 @@ class CFIValidator:
     
     def __init__(self) -> None:
         """Initialize the CFI validator."""
-        # Basic CFI pattern: starts with /, contains path steps, optional assertions
+        # Enhanced CFI pattern that properly handles the epubcfi() wrapper and text offsets
+        # Pattern explanation:
+        # - Optional epubcfi() wrapper
+        # - Spine part: /\d+(\[\w+\])? (may repeat)
+        # - Optional content part after ! 
+        # - Optional text location :offset or :offset~length
         self._cfi_pattern = re.compile(
-            r'^/\d+(?:\[\w+\])?(?:/\d+(?:\[\w+\])?)*(?:!\d+(?:\[\w+\])?(?:/\d+(?:\[\w+\])?)*)?(?::\d+)?(?:~\d+)?$'
+            r'^(?:epubcfi\()?/\d+(?:\[[^\]]+\])?(?:/\d+(?:\[[^\]]+\])?)*(?:!/?\d+(?:\[[^\]]+\])?(?:/\d+(?:\[[^\]]+\])?)*)?(?::\d+(?:~\d+)?)?(?:\))?$'
         )
     
     def validate(self, cfi: str) -> bool:
