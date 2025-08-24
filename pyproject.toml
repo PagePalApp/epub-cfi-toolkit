@@ -9,10 +9,10 @@ description = "A Python toolkit for processing EPUB Canonical Fragment Identifie
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "PagePalApp", email = "contact@pagepal.app"}
+    {name = "PagePalApp", email = "info@pagepalapp.com"}
 ]
 maintainers = [
-    {name = "PagePalApp", email = "contact@pagepal.app"}
+    {name = "PagePalApp", email = "info@pagepalapp.com"}
 ]
 keywords = ["epub", "cfi", "ebook", "canonical-fragment-identifier"]
 classifiers = [
