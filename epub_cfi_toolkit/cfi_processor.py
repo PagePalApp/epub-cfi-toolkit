@@ -9,7 +9,6 @@ from typing import Optional, Tuple, List, Any
 from lxml import etree, html
 
 from .exceptions import CFIError, EPUBError
-from .cfi_validator import CFIValidator
 from .cfi_parser import CFIParser, ParsedCFI
 from .epub_parser import EPUBParser
 
@@ -28,7 +27,6 @@ class CFIProcessor:
             EPUBError: If the EPUB file cannot be opened or is invalid
         """
         self.epub_path = Path(epub_path)
-        self.validator = CFIValidator()
         self.cfi_parser = CFIParser()
         self.epub_parser = EPUBParser(str(epub_path))
     
@@ -47,9 +45,6 @@ class CFIProcessor:
         Raises:
             CFIError: If the CFIs are invalid or text cannot be extracted
         """
-        # Validate both CFIs
-        self.validator.validate_strict(start_cfi)
-        self.validator.validate_strict(end_cfi)
         
         # Parse both CFIs
         start_parsed = self.cfi_parser.parse(start_cfi)
@@ -436,15 +431,3 @@ class CFIProcessor:
             return str(element.tail)
         return ""
     
-    def close(self) -> None:
-        """Close the EPUB file."""
-        if self.epub_parser:
-            self.epub_parser.close()
-    
-    def __enter__(self):
-        """Context manager entry."""
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
-        self.close()

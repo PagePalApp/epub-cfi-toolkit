@@ -7,7 +7,7 @@
 [![CI](https://github.com/PagePalApp/epub-cfi-toolkit/workflows/CI/badge.svg)](https://github.com/PagePalApp/epub-cfi-toolkit/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Python toolkit for processing **EPUB Canonical Fragment Identifiers (CFIs)**. This library provides functionality to extract text from EPUB files using CFI references, validate CFI strings, and navigate EPUB document structure.
+A Python toolkit for processing **EPUB Canonical Fragment Identifiers (CFIs)**. This library provides functionality to extract text from EPUB files using CFI references and navigate EPUB document structure.
 
 ## 🚀 Quick Start
 
@@ -20,7 +20,7 @@ pip install epub-cfi-toolkit
 ### Basic Usage
 
 ```python
-from epub_cfi_toolkit import CFIProcessor, CFIValidator
+from epub_cfi_toolkit import CFIProcessor
 
 # Simple usage - extract text from an EPUB file using CFI range
 processor = CFIProcessor("path/to/book.epub")
@@ -30,33 +30,19 @@ text = processor.extract_text_from_cfi_range(
 )
 print(text)  # "This is the extracted text from the EPUB"
 
-# Or use context manager for automatic resource cleanup
-with CFIProcessor("path/to/book.epub") as processor:
-    text = processor.extract_text_from_cfi_range(
-        start_cfi="epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",
-        end_cfi="epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:20)"
-    )
-    print(text)  # "This is the extracted text from the EPUB"
-
-# Validate CFI strings
-validator = CFIValidator()
-is_valid = validator.validate("epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:10)")
-print(is_valid)  # True or False
 ```
 
 ## 📚 Features
 
 - **✅ CFI Range Text Extraction**: Extract text between two CFI positions with character-level precision
-- **✅ CFI Validation**: Validate EPUB CFI strings for correct syntax and format
 - **✅ Cross-Element Support**: Handle text extraction across different XML elements
 - **✅ EPUB Structure Parsing**: Navigate EPUB spine, manifest, and content documents
 - **✅ Error Handling**: Comprehensive error handling with descriptive messages
-- **✅ Context Manager**: Safe resource management with automatic cleanup
 - **✅ Type Safety**: Full type hints for better development experience
 
 ## 🎯 Use Cases
 
-### Simple Text Extraction (Recommended for Quick Tasks)
+### Simple Text Extraction
 ```python
 from epub_cfi_toolkit import CFIProcessor
 
@@ -74,33 +60,15 @@ print(text)  # Extracted text from the novel
 from epub_cfi_toolkit import CFIProcessor
 
 # Extract highlighted text or notes from EPUB files
-with CFIProcessor("novel.epub") as processor:
-    # Extract a specific paragraph
-    paragraph = processor.extract_text_from_cfi_range(
-        "epubcfi(/6/14!/4/2/4/1:0)",    # Start of paragraph  
-        "epubcfi(/6/14!/4/2/4/1:150)"   # First 150 characters
-    )
-    print(f"Extracted: {paragraph}")
+processor = CFIProcessor("novel.epub")
+# Extract a specific paragraph
+paragraph = processor.extract_text_from_cfi_range(
+    "epubcfi(/6/14!/4/2/4/1:0)",    # Start of paragraph  
+    "epubcfi(/6/14!/4/2/4/1:150)"   # First 150 characters
+)
+print(f"Extracted: {paragraph}")
 ```
 
-### Validate CFI References
-```python
-from epub_cfi_toolkit import CFIValidator
-
-validator = CFIValidator()
-
-# Validate different CFI formats
-cfis_to_check = [
-    "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:10)",  # Valid
-    "epubcfi(/6/4!/4/2/22/1:0)",                           # Valid  
-    "invalid-cfi-string",                                   # Invalid
-    "/6/4[chap01ref]!/4[body01]/10[para05]/3:10"          # Valid (without wrapper)
-]
-
-for cfi in cfis_to_check:
-    result = "✅ Valid" if validator.validate(cfi) else "❌ Invalid"
-    print(f"{cfi} -> {result}")
-```
 
 ### Batch Process Multiple EPUBs
 ```python
@@ -115,9 +83,9 @@ def extract_from_multiple_books(epub_folder, cfi_start, cfi_end):
             epub_path = os.path.join(epub_folder, epub_file)
             
             try:
-                with CFIProcessor(epub_path) as processor:
-                    text = processor.extract_text_from_cfi_range(cfi_start, cfi_end)
-                    results.append((epub_file, text.strip()))
+                processor = CFIProcessor(epub_path)
+                text = processor.extract_text_from_cfi_range(cfi_start, cfi_end)
+                results.append((epub_file, text.strip()))
             except Exception as e:
                 print(f"Error processing {epub_file}: {e}")
     
@@ -144,40 +112,15 @@ class CFIProcessor:
     
     def extract_text_from_cfi_range(self, start_cfi: str, end_cfi: str) -> str:
         """Extract text between two CFI positions."""
-    
-    def close(self) -> None:
-        """Close and cleanup resources. (Optional - called automatically)"""
-    
-    # Context manager support (optional but recommended for long-running processes)
-    def __enter__(self) -> 'CFIProcessor': ...
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None: ...
 ```
 
-**Usage Notes:**
-- Context manager usage (`with` statement) is recommended for long-running processes or when processing multiple files
-- For simple, single extractions, direct instantiation works fine: `processor = CFIProcessor("book.epub")`
-- Resources are automatically cleaned up, but you can call `close()` explicitly if needed
-
-### CFIValidator
-
-Utility class for validating CFI strings.
-
-```python
-class CFIValidator:
-    def validate(self, cfi: str) -> bool:
-        """Return True if CFI is valid, False otherwise."""
-    
-    def validate_strict(self, cfi: str) -> None:
-        """Validate CFI, raise CFIValidationError if invalid."""
-```
 
 ### Exceptions
 
 ```python
-from epub_cfi_toolkit import CFIError, CFIValidationError, EPUBError
+from epub_cfi_toolkit import CFIError, EPUBError
 
 # CFIError: Base exception for CFI-related errors
-# CFIValidationError: Raised when CFI validation fails  
 # EPUBError: Raised when EPUB file cannot be processed
 ```
 
@@ -188,18 +131,18 @@ from epub_cfi_toolkit import CFIError, CFIValidationError, EPUBError
 from epub_cfi_toolkit import CFIProcessor
 
 # CFIs can reference complex document structures
-with CFIProcessor("textbook.epub") as processor:
-    # Extract from nested elements
-    citation = processor.extract_text_from_cfi_range(
-        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/2/1:0)",  # Inside <em> tag
-        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/2/1:25)"  # First 25 chars
-    )
-    
-    # Extract across multiple elements  
-    full_paragraph = processor.extract_text_from_cfi_range(
-        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",    # Start of paragraph
-        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:100)"   # Including tail text
-    )
+processor = CFIProcessor("textbook.epub")
+# Extract from nested elements
+citation = processor.extract_text_from_cfi_range(
+    "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/2/1:0)",  # Inside <em> tag
+    "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/2/1:25)"  # First 25 chars
+)
+
+# Extract across multiple elements  
+full_paragraph = processor.extract_text_from_cfi_range(
+    "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",    # Start of paragraph
+    "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:100)"   # Including tail text
+)
 ```
 
 ### Error Handling Best Practices
@@ -208,8 +151,8 @@ from epub_cfi_toolkit import CFIProcessor, CFIError, EPUBError
 
 def safe_extract_text(epub_path, start_cfi, end_cfi):
     try:
-        with CFIProcessor(epub_path) as processor:
-            return processor.extract_text_from_cfi_range(start_cfi, end_cfi)
+        processor = CFIProcessor(epub_path)
+        return processor.extract_text_from_cfi_range(start_cfi, end_cfi)
             
     except EPUBError as e:
         print(f"EPUB file error: {e}")
