@@ -22,7 +22,15 @@ pip install epub-cfi-toolkit
 ```python
 from epub_cfi_toolkit import CFIProcessor, CFIValidator
 
-# Extract text from an EPUB file using CFI range
+# Simple usage - extract text from an EPUB file using CFI range
+processor = CFIProcessor("path/to/book.epub")
+text = processor.extract_text_from_cfi_range(
+    start_cfi="epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",
+    end_cfi="epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:20)"
+)
+print(text)  # "This is the extracted text from the EPUB"
+
+# Or use context manager for automatic resource cleanup
 with CFIProcessor("path/to/book.epub") as processor:
     text = processor.extract_text_from_cfi_range(
         start_cfi="epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",
@@ -47,6 +55,19 @@ print(is_valid)  # True or False
 - **✅ Type Safety**: Full type hints for better development experience
 
 ## 🎯 Use Cases
+
+### Simple Text Extraction (Recommended for Quick Tasks)
+```python
+from epub_cfi_toolkit import CFIProcessor
+
+# Direct usage for simple text extraction
+processor = CFIProcessor("frankenstein.epub")
+text = processor.extract_text_from_cfi_range(
+    "epubcfi(/6/6!/4/2/10/1:0)",     # Start CFI
+    "epubcfi(/6/6!/4/2/10/3:150)"    # End CFI  
+)
+print(text)  # Extracted text from the novel
+```
 
 ### Extract Text from EPUB Annotations
 ```python
@@ -125,12 +146,17 @@ class CFIProcessor:
         """Extract text between two CFI positions."""
     
     def close(self) -> None:
-        """Close and cleanup resources."""
+        """Close and cleanup resources. (Optional - called automatically)"""
     
-    # Context manager support
+    # Context manager support (optional but recommended for long-running processes)
     def __enter__(self) -> 'CFIProcessor': ...
     def __exit__(self, exc_type, exc_val, exc_tb) -> None: ...
 ```
+
+**Usage Notes:**
+- Context manager usage (`with` statement) is recommended for long-running processes or when processing multiple files
+- For simple, single extractions, direct instantiation works fine: `processor = CFIProcessor("book.epub")`
+- Resources are automatically cleaned up, but you can call `close()` explicitly if needed
 
 ### CFIValidator
 
