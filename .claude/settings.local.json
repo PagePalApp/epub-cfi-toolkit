@@ -14,7 +14,10 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(zip:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(mypy:*)"
     ],
     "deny": [],
     "ask": []

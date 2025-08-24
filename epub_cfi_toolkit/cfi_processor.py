@@ -4,7 +4,7 @@ CFI processing functionality for EPUB files.
 
 import zipfile
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Any
 
 from lxml import etree, html
 
@@ -161,7 +161,7 @@ class CFIProcessor:
         text_offset = cfi.location.offset if cfi.location else 0
         return current_element, text_offset, 'text'
     
-    def _get_text_nodes(self, element) -> list:
+    def _get_text_nodes(self, element: Any) -> List[Tuple[Any, str]]:
         """
         Get all text nodes within an element in document order (CFI style).
         In CFI, odd indices are text nodes, even indices are elements.
@@ -172,7 +172,7 @@ class CFIProcessor:
         text_nodes = []
         
         # Add the element's direct text if it exists (first text node)
-        if element.text:
+        if hasattr(element, 'text') and element.text:
             text_nodes.append((element, 'text'))
         
         # Process child elements - only their tail text counts as text nodes
@@ -180,7 +180,7 @@ class CFIProcessor:
         for child in element:
             # Skip the child element's own text - that would be accessed via child navigation
             # Only add the child's tail text as a text node
-            if child.tail:
+            if hasattr(child, 'tail') and child.tail:
                 text_nodes.append((child, 'tail'))
         
         return text_nodes
@@ -430,10 +430,10 @@ class CFIProcessor:
         Returns:
             The text content
         """
-        if text_type == 'text' and element.text:
-            return element.text
-        elif text_type == 'tail' and element.tail:
-            return element.tail
+        if text_type == 'text' and hasattr(element, 'text') and element.text:
+            return str(element.text)
+        elif text_type == 'tail' and hasattr(element, 'tail') and element.tail:
+            return str(element.tail)
         return ""
     
     def close(self) -> None:

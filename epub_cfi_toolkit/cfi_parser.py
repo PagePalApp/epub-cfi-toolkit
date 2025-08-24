@@ -48,7 +48,7 @@ class ParsedCFI:
 class CFIParser:
     """Parser for EPUB CFI strings."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the CFI parser."""
         # Match CFI components: /step[assertion] or /step:offset or /step:offset~length
         self._step_pattern = re.compile(r'/(\d+)(?:\[([^\]]+)\])?')

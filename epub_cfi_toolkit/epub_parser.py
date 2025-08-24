@@ -63,6 +63,8 @@ class EPUBParser:
     def _parse_container(self) -> None:
         """Parse META-INF/container.xml to find OPF file."""
         try:
+            if self._epub_zip is None:
+                raise EPUBError("EPUB file not properly initialized")
             container_data = self._epub_zip.read("META-INF/container.xml")
             container_xml = etree.fromstring(container_data)
             
@@ -83,6 +85,10 @@ class EPUBParser:
             raise EPUBError("OPF path not found")
         
         try:
+            if self._epub_zip is None:
+                raise EPUBError("EPUB file not properly initialized")
+            if self._opf_path is None:
+                raise EPUBError("OPF path not found")
             opf_data = self._epub_zip.read(self._opf_path)
             opf_xml = etree.fromstring(opf_data)
             
@@ -162,6 +168,8 @@ class EPUBParser:
             raise EPUBError(f"Manifest item not found: {spine_item.idref}")
         
         # Combine OPF directory with href
+        if self._opf_path is None:
+            raise EPUBError("OPF path not found")
         opf_dir = str(Path(self._opf_path).parent)
         if opf_dir == '.':
             return manifest_item.href
@@ -184,6 +192,8 @@ class EPUBParser:
         document_path = self.get_content_document_path(spine_item)
         
         try:
+            if self._epub_zip is None:
+                raise EPUBError("EPUB file not properly initialized")
             return self._epub_zip.read(document_path)
         except Exception as e:
             raise EPUBError(f"Failed to read document {document_path}: {e}")
@@ -194,10 +204,10 @@ class EPUBParser:
             self._epub_zip.close()
             self._epub_zip = None
     
-    def __enter__(self):
+    def __enter__(self) -> 'EPUBParser':
         """Context manager entry."""
         return self
     
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Context manager exit."""
         self.close()
