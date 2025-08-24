@@ -3,7 +3,7 @@ EPUB CFI Toolkit - A Python toolkit for processing EPUB Canonical Fragment Ident
 """
 
 __version__ = "0.1.0"
-__author__ = "PagePalApp"
+__author__ = "PagePal"
 __email__ = "info@pagepalapp.com"
 
 from .cfi_processor import CFIProcessor
