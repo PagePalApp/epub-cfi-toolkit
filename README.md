@@ -38,19 +38,30 @@ with CFIProcessor("path/to/book.epub") as processor:
     )
     print(text)  # "This is the extracted text from the EPUB"
 
-# Validate CFI strings
+# Validate CFI strings (syntax validation)
 validator = CFIValidator()
 is_valid = validator.validate("epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:10)")
 print(is_valid)  # True or False
+
+# Validate CFI against document structure (enhanced validation)
+with CFIProcessor("path/to/book.epub") as processor:
+    cfi_is_valid = processor.validate_cfi_bounds("epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)")
+    if cfi_is_valid:
+        text = processor.extract_text_from_cfi_range(start_cfi, end_cfi)
+    else:
+        print("CFI references non-existent elements")
 ```
 
 ## 📚 Features
 
 - **✅ CFI Range Text Extraction**: Extract text between two CFI positions with character-level precision
-- **✅ CFI Validation**: Validate EPUB CFI strings for correct syntax and format
+- **✅ Enhanced CFI Validation**: Validate CFI strings against actual document structure, not just syntax
+- **✅ Document Structure Checking**: Verify that CFI references point to existing elements and text nodes
+- **✅ Detailed Error Messages**: Helpful error messages with element context and valid ranges
 - **✅ Cross-Element Support**: Handle text extraction across different XML elements
 - **✅ EPUB Structure Parsing**: Navigate EPUB spine, manifest, and content documents
-- **✅ Error Handling**: Comprehensive error handling with descriptive messages
+- **✅ CFI Bounds Validation**: Check CFI validity with `validate_cfi_bounds()` methods
+- **✅ Improved Error Handling**: Better error messages for reversed CFI ranges and invalid references
 - **✅ Context Manager**: Safe resource management with automatic cleanup
 - **✅ Type Safety**: Full type hints for better development experience
 
@@ -145,6 +156,12 @@ class CFIProcessor:
     def extract_text_from_cfi_range(self, start_cfi: str, end_cfi: str) -> str:
         """Extract text between two CFI positions."""
     
+    def validate_cfi_bounds(self, cfi: str) -> bool:
+        """Check if CFI references valid elements within document structure."""
+    
+    def validate_cfi_bounds_strict(self, cfi: str) -> None:
+        """Check CFI bounds and raise detailed errors if invalid."""
+    
     def close(self) -> None:
         """Close and cleanup resources. (Optional - called automatically)"""
     
@@ -169,6 +186,12 @@ class CFIValidator:
     
     def validate_strict(self, cfi: str) -> None:
         """Validate CFI, raise CFIValidationError if invalid."""
+    
+    def validate_against_document(self, cfi: str, epub_parser, document_tree=None) -> bool:
+        """Validate CFI against actual document structure."""
+    
+    def validate_against_document_strict(self, cfi: str, epub_parser, document_tree=None) -> None:
+        """Validate against document structure with detailed error messages."""
 ```
 
 ### Exceptions
@@ -182,6 +205,50 @@ from epub_cfi_toolkit import CFIError, CFIValidationError, EPUBError
 ```
 
 ## 🧪 Advanced Examples
+
+### Enhanced CFI Validation
+
+The library now provides enhanced validation that checks CFI references against the actual document structure:
+
+```python
+from epub_cfi_toolkit import CFIProcessor, CFIError
+
+with CFIProcessor("book.epub") as processor:
+    # Check if a CFI references valid elements before extraction
+    cfi_to_check = "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)"
+    
+    if processor.validate_cfi_bounds(cfi_to_check):
+        text = processor.extract_text_from_cfi_range(start_cfi, end_cfi)
+        print(f"Extracted: {text}")
+    else:
+        print("CFI references invalid elements in the document")
+    
+    # Get detailed validation error messages
+    try:
+        processor.validate_cfi_bounds_strict("epubcfi(/6/50!/4/2/1:0)")
+    except CFIError as e:
+        print(f"Validation failed: {e}")
+        # Output: CFI references spine item 50 but document only has 3 spine items (valid range: 2-6)
+```
+
+### Improved Error Handling
+
+The library now provides much more helpful error messages:
+
+```python
+from epub_cfi_toolkit import CFIProcessor, CFIError
+
+try:
+    with CFIProcessor("book.epub") as processor:
+        # This will now provide a helpful error message
+        result = processor.extract_text_from_cfi_range(
+            "epubcfi(/6/4!/4/2/1:20)",  # End CFI 
+            "epubcfi(/6/4!/4/2/1:0)"   # Start CFI (reversed!)
+        )
+except CFIError as e:
+    print(e)  
+    # Output: CFI range is in reverse order: start CFI comes after end CFI. Please swap the start and end CFIs.
+```
 
 ### Working with Complex CFI Paths
 ```python
