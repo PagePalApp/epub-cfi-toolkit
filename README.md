@@ -1,40 +1,214 @@
+**Disclaimer**: everything in this repository was generated entirely by Claude Code (including this README) and has not been reviewed or verified by a human. Content may be inaccurate or incomplete. Use at your own risk.
+
 # EPUB CFI Toolkit
 
-A Python toolkit for processing EPUB Canonical Fragment Identifiers (CFIs). This library provides functionality to identify text in EPUB files using CFIs, convert between text locations and CFIs, and validate CFI strings.
+[![PyPI version](https://badge.fury.io/py/epub-cfi-toolkit.svg)](https://badge.fury.io/py/epub-cfi-toolkit)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/PagePalApp/epub-cfi-toolkit/workflows/CI/badge.svg)](https://github.com/PagePalApp/epub-cfi-toolkit/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+A Python toolkit for processing **EPUB Canonical Fragment Identifiers (CFIs)**. This library provides functionality to extract text from EPUB files using CFI references, validate CFI strings, and navigate EPUB document structure.
 
-- **CFI Validation**: Validate EPUB CFI strings for correct syntax
-- **Text to CFI**: Convert text locations within EPUB files to CFI strings
-- **CFI to Text**: Extract text content from EPUB files using CFI references
-- **EPUB Processing**: Handle EPUB file structure and navigation
+## 🚀 Quick Start
 
-## Installation
+### Installation
 
 ```bash
 pip install epub-cfi-toolkit
 ```
 
-## Quick Start
+### Basic Usage
 
 ```python
 from epub_cfi_toolkit import CFIProcessor, CFIValidator
 
-# Validate a CFI string
-validator = CFIValidator()
-is_valid = validator.validate("/6/4[chap01ref]!/4[body01]/10[para05]/3:10")
+# Extract text from an EPUB file using CFI range
+with CFIProcessor("path/to/book.epub") as processor:
+    text = processor.extract_text_from_cfi_range(
+        start_cfi="epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",
+        end_cfi="epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:20)"
+    )
+    print(text)  # "This is the extracted text from the EPUB"
 
-# Process EPUB file with CFI
-processor = CFIProcessor("path/to/your/book.epub")
-text = processor.extract_text_from_cfi("/6/4[chap01ref]!/4[body01]/10[para05]/3:10")
+# Validate CFI strings
+validator = CFIValidator()
+is_valid = validator.validate("epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:10)")
+print(is_valid)  # True or False
 ```
 
-## Requirements
+## 📚 Features
 
-- Python 3.8+
-- lxml
+- **✅ CFI Range Text Extraction**: Extract text between two CFI positions with character-level precision
+- **✅ CFI Validation**: Validate EPUB CFI strings for correct syntax and format
+- **✅ Cross-Element Support**: Handle text extraction across different XML elements
+- **✅ EPUB Structure Parsing**: Navigate EPUB spine, manifest, and content documents
+- **✅ Error Handling**: Comprehensive error handling with descriptive messages
+- **✅ Context Manager**: Safe resource management with automatic cleanup
+- **✅ Type Safety**: Full type hints for better development experience
 
-## Development
+## 🎯 Use Cases
+
+### Extract Text from EPUB Annotations
+```python
+from epub_cfi_toolkit import CFIProcessor
+
+# Extract highlighted text or notes from EPUB files
+with CFIProcessor("novel.epub") as processor:
+    # Extract a specific paragraph
+    paragraph = processor.extract_text_from_cfi_range(
+        "epubcfi(/6/14!/4/2/4/1:0)",    # Start of paragraph  
+        "epubcfi(/6/14!/4/2/4/1:150)"   # First 150 characters
+    )
+    print(f"Extracted: {paragraph}")
+```
+
+### Validate CFI References
+```python
+from epub_cfi_toolkit import CFIValidator
+
+validator = CFIValidator()
+
+# Validate different CFI formats
+cfis_to_check = [
+    "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:10)",  # Valid
+    "epubcfi(/6/4!/4/2/22/1:0)",                           # Valid  
+    "invalid-cfi-string",                                   # Invalid
+    "/6/4[chap01ref]!/4[body01]/10[para05]/3:10"          # Valid (without wrapper)
+]
+
+for cfi in cfis_to_check:
+    result = "✅ Valid" if validator.validate(cfi) else "❌ Invalid"
+    print(f"{cfi} -> {result}")
+```
+
+### Batch Process Multiple EPUBs
+```python
+from epub_cfi_toolkit import CFIProcessor
+import os
+
+def extract_from_multiple_books(epub_folder, cfi_start, cfi_end):
+    results = []
+    
+    for epub_file in os.listdir(epub_folder):
+        if epub_file.endswith('.epub'):
+            epub_path = os.path.join(epub_folder, epub_file)
+            
+            try:
+                with CFIProcessor(epub_path) as processor:
+                    text = processor.extract_text_from_cfi_range(cfi_start, cfi_end)
+                    results.append((epub_file, text.strip()))
+            except Exception as e:
+                print(f"Error processing {epub_file}: {e}")
+    
+    return results
+
+# Extract the same CFI range from multiple books
+results = extract_from_multiple_books(
+    "books/", 
+    "epubcfi(/6/6!/4/2/22/1:0)", 
+    "epubcfi(/6/6!/4/2/22/3:15)"
+)
+```
+
+## 📖 API Reference
+
+### CFIProcessor
+
+The main class for processing EPUB files and extracting text using CFIs.
+
+```python
+class CFIProcessor:
+    def __init__(self, epub_path: str) -> None:
+        """Initialize with path to EPUB file."""
+    
+    def extract_text_from_cfi_range(self, start_cfi: str, end_cfi: str) -> str:
+        """Extract text between two CFI positions."""
+    
+    def close(self) -> None:
+        """Close and cleanup resources."""
+    
+    # Context manager support
+    def __enter__(self) -> 'CFIProcessor': ...
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None: ...
+```
+
+### CFIValidator
+
+Utility class for validating CFI strings.
+
+```python
+class CFIValidator:
+    def validate(self, cfi: str) -> bool:
+        """Return True if CFI is valid, False otherwise."""
+    
+    def validate_strict(self, cfi: str) -> None:
+        """Validate CFI, raise CFIValidationError if invalid."""
+```
+
+### Exceptions
+
+```python
+from epub_cfi_toolkit import CFIError, CFIValidationError, EPUBError
+
+# CFIError: Base exception for CFI-related errors
+# CFIValidationError: Raised when CFI validation fails  
+# EPUBError: Raised when EPUB file cannot be processed
+```
+
+## 🧪 Advanced Examples
+
+### Working with Complex CFI Paths
+```python
+from epub_cfi_toolkit import CFIProcessor
+
+# CFIs can reference complex document structures
+with CFIProcessor("textbook.epub") as processor:
+    # Extract from nested elements
+    citation = processor.extract_text_from_cfi_range(
+        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/2/1:0)",  # Inside <em> tag
+        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/2/1:25)"  # First 25 chars
+    )
+    
+    # Extract across multiple elements  
+    full_paragraph = processor.extract_text_from_cfi_range(
+        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)",    # Start of paragraph
+        "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:100)"   # Including tail text
+    )
+```
+
+### Error Handling Best Practices
+```python
+from epub_cfi_toolkit import CFIProcessor, CFIError, EPUBError
+
+def safe_extract_text(epub_path, start_cfi, end_cfi):
+    try:
+        with CFIProcessor(epub_path) as processor:
+            return processor.extract_text_from_cfi_range(start_cfi, end_cfi)
+            
+    except EPUBError as e:
+        print(f"EPUB file error: {e}")
+        return None
+        
+    except CFIError as e:
+        print(f"CFI processing error: {e}")
+        return None
+        
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return None
+
+# Safe extraction with error handling
+result = safe_extract_text("book.epub", "epubcfi(/6/4!/4/2/1:0)", "epubcfi(/6/4!/4/2/1:50)")
+if result:
+    print(f"Extracted: {result}")
+```
+
+## 🛠️ Requirements
+
+- **Python 3.8+** (tested on 3.8, 3.9, 3.10, 3.11, 3.12)
+- **lxml** - XML processing library
+
+## 🏗️ Development
 
 ```bash
 # Clone the repository
@@ -43,7 +217,12 @@ cd epub-cfi-toolkit
 
 # Create virtual environment
 python -m venv venv
-source venv/Scripts/activate  # On Windows
+
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:  
+source venv/bin/activate
 
 # Install development dependencies
 pip install -e .[dev]
@@ -51,18 +230,56 @@ pip install -e .[dev]
 # Run tests
 pytest
 
-# Format code
+# Run tests with coverage
+pytest --cov=epub_cfi_toolkit --cov-report=html
+
+# Code formatting
 black epub_cfi_toolkit tests
 isort epub_cfi_toolkit tests
 
 # Type checking
 mypy epub_cfi_toolkit
+
+# Linting
+flake8 epub_cfi_toolkit
 ```
 
-## License
+## 📋 What are EPUB CFIs?
 
-MIT License - see [LICENSE](LICENSE) file for details.
+EPUB Canonical Fragment Identifiers (CFIs) are a standard way to reference specific locations within EPUB documents. They work like precise bookmarks that can point to:
 
-## Contributing
+- Specific characters within text
+- Elements within the document structure  
+- Ranges of text across multiple elements
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+**Example CFI**: `epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/3:10)`
+
+This CFI breaks down as:
+- `/6` - Reference to spine item
+- `/4[chap01ref]` - Chapter 1 reference  
+- `!` - Separator (spine reference / content reference)
+- `/4[body01]/10[para05]` - Navigate to paragraph 5 in body
+- `/3:10` - Character offset 10 in the 3rd text node
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Make your changes
+4. Add tests for your changes
+5. Ensure all tests pass (`pytest`)
+6. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+7. Push to the branch (`git push origin feature/AmazingFeature`)
+8. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built according to the [EPUB CFI specification](https://idpf.org/epub/linking/cfi/)
+- Developed with ❤️ for the EPUB and digital publishing community
+- Part of the [PagePal](https://github.com/PagePalApp) ecosystem
