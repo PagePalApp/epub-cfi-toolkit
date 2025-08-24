@@ -151,6 +151,12 @@ class CFIProcessor:
                     raise CFIError(f"Invalid CFI step index: {step.index} at step {i}")
                 
                 current_element = current_element[child_index]
+                
+                # Validate assertion if present
+                if step.assertion:
+                    element_id = current_element.get('id') if hasattr(current_element, 'get') else None
+                    if element_id != step.assertion:
+                        raise CFIError(f"Element assertion mismatch: expected {step.assertion}, got {element_id}")
         
         # If no content steps or we end up at element level
         text_offset = cfi.location.offset if cfi.location else 0
