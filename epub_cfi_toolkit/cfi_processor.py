@@ -47,13 +47,37 @@ class CFIProcessor:
         Raises:
             CFIError: If the CFIs are invalid or text cannot be extracted
         """
-        # Validate both CFIs
+        # First validate basic CFI syntax
         self.validator.validate_strict(start_cfi)
         self.validator.validate_strict(end_cfi)
         
-        # Parse both CFIs
+        # Parse both CFIs to enable document structure validation
         start_parsed = self.cfi_parser.parse(start_cfi)
         end_parsed = self.cfi_parser.parse(end_cfi)
+        
+        # Get the document tree for validation
+        if len(start_parsed.spine_steps) < 2:
+            raise CFIError("CFI must contain both spine and itemref references")
+            
+        itemref_step = start_parsed.spine_steps[1]
+        spine_item = self.epub_parser.get_spine_item_by_index(itemref_step.index)
+        if not spine_item:
+            raise CFIError(f"Spine item not found for index {itemref_step.index}")
+        
+        document_content = self.epub_parser.read_content_document(spine_item)
+        document_tree = etree.fromstring(document_content)
+        
+        # Validate both CFIs against the actual document structure
+        try:
+            self.validator.validate_against_document_strict(start_cfi, self.epub_parser, document_tree)
+            self.validator.validate_against_document_strict(end_cfi, self.epub_parser, document_tree)
+        except Exception as e:
+            # Convert validation errors to CFIError with better context
+            if "CFI references spine item" in str(e) or "CFI step" in str(e):
+                raise CFIError(f"CFI validation failed: {str(e)}")
+            raise
+        
+        # CFIs already parsed above for validation
         
         # Ensure both CFIs are in the same document  
         # Compare the itemref indices (second spine step)
@@ -61,10 +85,10 @@ class CFIProcessor:
             start_parsed.spine_steps[1].index != end_parsed.spine_steps[1].index):
             raise CFIError("CFI range cannot span different documents")
         
-        # Ensure start comes before end
+        # Ensure start comes before end with helpful error message
         comparison = self.cfi_parser.compare_cfis(start_parsed, end_parsed)
         if comparison > 0:
-            raise CFIError("End CFI must come after start CFI")
+            raise CFIError(f"CFI range is in reverse order: start CFI '{start_cfi}' comes after end CFI '{end_cfi}'. Please swap the start and end CFIs.")
         elif comparison == 0:
             return ""  # Same position returns empty string
         
@@ -447,4 +471,65 @@ class CFIProcessor:
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
-        self.close()
+        self.close()    
+    def validate_cfi_bounds(self, cfi: str) -> bool:
+        """
+        Check if a CFI references valid elements within the document structure.
+        
+        Args:
+            cfi: The CFI string to validate
+            
+        Returns:
+            True if CFI references valid elements, False otherwise
+        """
+        try:
+            parsed_cfi = self.cfi_parser.parse(cfi)
+            
+            # Get document tree
+            if len(parsed_cfi.spine_steps) < 2:
+                return False
+                
+            itemref_step = parsed_cfi.spine_steps[1]
+            spine_item = self.epub_parser.get_spine_item_by_index(itemref_step.index)
+            if not spine_item:
+                return False
+            
+            document_content = self.epub_parser.read_content_document(spine_item)
+            document_tree = etree.fromstring(document_content)
+            
+            return self.validator.validate_against_document(cfi, self.epub_parser, document_tree)
+            
+        except Exception:
+            return False
+    
+    def validate_cfi_bounds_strict(self, cfi: str) -> None:
+        """
+        Check if a CFI references valid elements and raise detailed errors if not.
+        
+        Args:
+            cfi: The CFI string to validate
+            
+        Raises:
+            CFIError: If CFI references invalid elements with detailed explanation
+        """
+        try:
+            parsed_cfi = self.cfi_parser.parse(cfi)
+            
+            # Get document tree
+            if len(parsed_cfi.spine_steps) < 2:
+                raise CFIError("CFI must contain both spine and itemref references")
+                
+            itemref_step = parsed_cfi.spine_steps[1]
+            spine_item = self.epub_parser.get_spine_item_by_index(itemref_step.index)
+            if not spine_item:
+                raise CFIError(f"Spine item not found for index {itemref_step.index}")
+            
+            document_content = self.epub_parser.read_content_document(spine_item)
+            document_tree = etree.fromstring(document_content)
+            
+            self.validator.validate_against_document_strict(cfi, self.epub_parser, document_tree)
+            
+        except Exception as e:
+            if isinstance(e, CFIError):
+                raise
+            raise CFIError(f"CFI bounds validation failed: {str(e)}")

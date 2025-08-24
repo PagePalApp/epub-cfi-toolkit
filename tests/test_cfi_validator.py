@@ -63,4 +63,20 @@ class TestCFIValidator:
     
     def test_validate_empty_string(self):
         """Test validation with empty string."""
-        assert not self.validator.validate("")
+        assert not self.validator.validate("")    
+    def test_validate_against_document_methods_exist(self):
+        """Test that new document validation methods exist and are callable."""
+        # Test that the new methods exist
+        assert hasattr(self.validator, 'validate_against_document')
+        assert hasattr(self.validator, 'validate_against_document_strict')
+        
+        # Test that they're callable
+        assert callable(getattr(self.validator, 'validate_against_document'))
+        assert callable(getattr(self.validator, 'validate_against_document_strict'))
+    
+    def test_validate_against_document_with_none_inputs(self):
+        """Test document validation handles None inputs gracefully."""
+        valid_cfi = "/2/4[chap01ref]!/4[body01]/10[para05]/3:10"
+        
+        # Should return False when epub_parser is None
+        assert not self.validator.validate_against_document(valid_cfi, None, None)
