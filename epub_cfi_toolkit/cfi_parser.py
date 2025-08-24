@@ -104,7 +104,7 @@ class CFIParser:
         
         # Split by non-escaped commas
         parts = []
-        current_part = []
+        current_part: List[str] = []
         i = 0
         while i < len(inner):
             if inner[i] == ',' and (i == 0 or inner[i-1] != '^'):
