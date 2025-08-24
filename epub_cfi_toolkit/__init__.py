@@ -7,17 +7,14 @@ __author__ = "PagePal"
 __email__ = "info@pagepalapp.com"
 
 from .cfi_processor import CFIProcessor
-from .cfi_validator import CFIValidator
 from .cfi_parser import CFIParser
 from .epub_parser import EPUBParser
-from .exceptions import CFIError, CFIValidationError, EPUBError
+from .exceptions import CFIError, EPUBError
 
 __all__ = [
     "CFIProcessor",
-    "CFIValidator",
     "CFIParser",
     "EPUBParser",
     "CFIError",
-    "CFIValidationError",
     "EPUBError",
 ]

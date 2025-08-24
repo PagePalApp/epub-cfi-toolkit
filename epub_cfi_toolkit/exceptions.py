@@ -8,10 +8,6 @@ class CFIError(Exception):
     pass
 
 
-class CFIValidationError(CFIError):
-    """Exception raised when CFI validation fails."""
-    pass
-
 
 class EPUBError(Exception):
     """Base exception class for EPUB-related errors."""
