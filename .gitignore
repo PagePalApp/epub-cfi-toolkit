@@ -130,3 +130,6 @@ dmypy.json
 
 # Test files
 test_epub_files/
+
+# Claude Code
+.claude/settings.local.json
