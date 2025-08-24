@@ -2,7 +2,7 @@
 EPUB CFI Toolkit - A Python toolkit for processing EPUB Canonical Fragment Identifiers.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "PagePal"
 __email__ = "info@pagepalapp.com"
 

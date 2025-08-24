@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "epub-cfi-toolkit"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Python toolkit for processing EPUB Canonical Fragment Identifiers (CFIs)"
 readme = "README.md"
 license = {text = "MIT"}
