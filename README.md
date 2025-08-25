@@ -4,7 +4,7 @@
 
 [![PyPI version](https://badge.fury.io/py/epub-cfi-toolkit.svg)](https://badge.fury.io/py/epub-cfi-toolkit)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![CI](https://github.com/PagePalApp/epub-cfi-toolkit/workflows/CI/badge.svg)](https://github.com/PagePalApp/epub-cfi-toolkit/actions)
+[![CI](https://github.com/PagePalApp/epub-cfi-toolkit/workflows/CI/badge.svg?branch=main)](https://github.com/PagePalApp/epub-cfi-toolkit/actions?query=workflow%3ACI+branch%3Amain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A Python toolkit for extracting text from EPUB files using **EPUB Canonical Fragment Identifiers (CFIs)** with full CFI specification compliance.
