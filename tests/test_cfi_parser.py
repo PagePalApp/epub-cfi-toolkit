@@ -238,6 +238,11 @@ class TestEdgeCasesAndErrorConditions:
         with pytest.raises(CFIError, match="CFI cannot be empty"):
             self.parser.parse("")
     
+    def test_whitespace_only_cfi(self):
+        """Test CFI with only whitespace raises appropriate error."""
+        with pytest.raises(CFIError, match="CFI must start with"):
+            self.parser.parse("   ")
+    
     def test_invalid_cfi_format(self):
         """Test CFI that doesn't start with slash."""
         with pytest.raises(CFIError, match="CFI must start with"):
@@ -260,3 +265,6 @@ class TestEdgeCasesAndErrorConditions:
         # Should have only one spine step, causing error in spine_index property
         with pytest.raises(CFIError, match="CFI must contain both spine and itemref"):
             _ = parsed.spine_index
+        
+        # spine_assertion should return None for insufficient spine steps
+        assert parsed.spine_assertion is None
