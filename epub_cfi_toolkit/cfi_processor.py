@@ -65,24 +65,22 @@ class CFIProcessor:
             return ""  # Same position returns empty string
 
         # Get the spine item and load the document
-        # In CFI like /6/4[chap01ref]!, the /6 points to spine, /4[chap01ref] points to itemref
+        # In CFI like /6/4[chap01ref]!, /6 points to spine, /4[chap01ref] to itemref
         # We need the second spine step which contains the itemref index and
         # assertion
         if len(start_parsed.spine_steps) < 2:
-            raise CFIError(
-                "CFI must contain both spine and itemref references")
+            raise CFIError("CFI must contain both spine and itemref references")
 
         itemref_step = start_parsed.spine_steps[1]
-        spine_item = self.epub_parser.get_spine_item_by_index(
-            itemref_step.index)
+        spine_item = self.epub_parser.get_spine_item_by_index(itemref_step.index)
         if not spine_item:
-            raise CFIError(
-                f"Spine item not found for index {itemref_step.index}")
+            raise CFIError(f"Spine item not found for index {itemref_step.index}")
 
         # Verify assertion if present
         if itemref_step.assertion and spine_item.id != itemref_step.assertion:
             raise CFIError(
-                f"Spine item assertion mismatch: expected {itemref_step.assertion}, got {spine_item.id}"
+                f"Spine item assertion mismatch: expected {itemref_step.assertion}, "
+                f"got {spine_item.id}"
             )
 
         # Read and parse the document
@@ -90,8 +88,7 @@ class CFIProcessor:
         document_tree = etree.fromstring(document_content)
 
         # Extract text between the two positions
-        return self._extract_text_from_range(
-            document_tree, start_parsed, end_parsed)
+        return self._extract_text_from_range(document_tree, start_parsed, end_parsed)
 
     def _extract_text_from_range(
         self, document_tree, start_cfi: ParsedCFI, end_cfi: ParsedCFI
@@ -131,7 +128,7 @@ class CFIProcessor:
             cfi: Parsed CFI
 
         Returns:
-            Tuple of (element, text_offset, text_node_type) where text_node_type is 'text' or 'tail'
+            Tuple of (element, text_offset, text_node_type) where type is 'text' or 'tail'
         """
         # Start from the document root
         current_element = document_tree
@@ -151,7 +148,8 @@ class CFIProcessor:
 
                 if text_node_index < 0 or text_node_index >= len(text_nodes):
                     raise CFIError(
-                        f"Invalid text node index: {step.index} (resolved to {text_node_index}, max {len(text_nodes)-1})"
+                        f"Invalid text node index: {step.index} "
+                        f"(resolved to {text_node_index}, max {len(text_nodes)-1})"
                     )
 
                 text_element, text_type = text_nodes[text_node_index]
@@ -169,8 +167,7 @@ class CFIProcessor:
                     child_index = (step.index - 1) // 2
 
                 if child_index < 0 or child_index >= len(current_element):
-                    raise CFIError(
-                        f"Invalid CFI step index: {step.index} at step {i}")
+                    raise CFIError(f"Invalid CFI step index: {step.index} at step {i}")
 
                 current_element = current_element[child_index]
 
@@ -183,7 +180,8 @@ class CFIProcessor:
                     )
                     if element_id != step.assertion:
                         raise CFIError(
-                            f"Element assertion mismatch: expected {step.assertion}, got {element_id}"
+                            f"Element assertion mismatch: expected {step.assertion}, "
+                            f"got {element_id}"
                         )
 
         # If no content steps or we end up at element level
@@ -320,8 +318,7 @@ class CFIProcessor:
 
         return "".join(result_parts)
 
-    def _find_common_parent(self, start_node, end_node,
-                            start_type: str, end_type: str):
+    def _find_common_parent(self, start_node, end_node, start_type: str, end_type: str):
         """
         Find the common parent element that contains both text nodes.
 
@@ -414,11 +411,9 @@ class CFIProcessor:
         )
         if collected_content:
             # Remove the start portion (already added) and add the rest
-            start_text_full = self._get_text_content(
-                start_node, start_type) or ""
+            start_text_full = self._get_text_content(start_node, start_type) or ""
             if collected_content.startswith(start_text_full):
-                remaining_after_start = collected_content[len(
-                    start_text_full):]
+                remaining_after_start = collected_content[len(start_text_full) :]
                 result_parts.append(remaining_after_start)
             else:
                 result_parts.append(collected_content)
