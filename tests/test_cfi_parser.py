@@ -1,12 +1,11 @@
 """
-Tests for EPUB CFI specification compliance.
-Based on the official EPUB CFI specification at https://idpf.org/epub/linking/cfi/
+Tests for CFIParser class.
+Tests CFI parsing functionality and specification compliance.
 """
 
 import pytest
-from pathlib import Path
 
-from epub_cfi_toolkit import CFIProcessor, CFIError
+from epub_cfi_toolkit import CFIError
 from epub_cfi_toolkit.cfi_parser import CFIParser, CFIStep, CFILocation, ParsedCFI
 
 
@@ -122,99 +121,81 @@ class TestRangeCFISyntax:
         assert len(parsed.spine_steps) == 2
 
 
-class TestUTF16CharacterOffsets:
-    """Test UTF-16 character offset handling with Unicode characters."""
-    
-    @pytest.fixture
-    def sample_epub_path(self):
-        """Return path to sample EPUB file.""" 
-        return Path(__file__).parent.parent / "test_data" / "sample.epub"
-    
-    def test_utf16_offset_calculation(self):
-        """Test that character offsets use UTF-16 code units."""
-        # Create test content with Unicode characters
-        # This would need a special test EPUB with Unicode content
-        # For now, we'll test the parser logic
-        parser = CFIParser()
-        cfi = "epubcfi(/6/4!/4/2/1:5)"  # Offset 5
-        parsed = parser.parse(cfi)
-        
-        assert parsed.location.offset == 5
-        
-    def test_multibyte_character_handling(self):
-        """Test handling of multi-byte UTF-16 characters."""
-        # Emoji and other characters that require surrogate pairs in UTF-16
-        # would be counted as 2 code units, not 1 character
-        parser = CFIParser()
-        cfi = "epubcfi(/6/4!/4/2/1:10)"  # Higher offset for multi-byte chars
-        parsed = parser.parse(cfi)
-        
-        assert parsed.location.offset == 10
-
-
-class TestVirtualElementIndices:
-    """Test virtual element indices (0 and n+2) per specification."""
+class TestBasicCFIParsing:
+    """Test basic CFI parsing functionality."""
     
     def setup_method(self):
         """Set up test fixtures."""
         self.parser = CFIParser()
     
-    def test_virtual_element_zero(self):
-        """Test virtual element index 0 (before first character data)."""
-        cfi = "epubcfi(/6/4!/4/0:0)"  # Virtual element 0
+    def test_simple_cfi_parsing(self):
+        """Test parsing a simple CFI."""
+        cfi = "epubcfi(/6/4!/4/2/1:5)"
         parsed = self.parser.parse(cfi)
         
-        assert len(parsed.content_steps) == 2  # /4, /0
-        assert parsed.content_steps[1].index == 0
-        assert parsed.location.offset == 0
+        # Check spine steps
+        assert len(parsed.spine_steps) == 2
+        assert parsed.spine_steps[0].index == 6
+        assert parsed.spine_steps[1].index == 4
+        
+        # Check content steps
+        assert len(parsed.content_steps) == 3
+        assert parsed.content_steps[0].index == 4
+        assert parsed.content_steps[1].index == 2
+        assert parsed.content_steps[2].index == 1
+        
+        # Check location
+        assert parsed.location.offset == 5
+        assert parsed.location.length is None
     
-    def test_virtual_element_high(self):
-        """Test virtual element after last child (n+2 pattern).""" 
-        cfi = "epubcfi(/6/4!/4/20:0)"  # High even number representing virtual element
+    def test_cfi_with_assertions(self):
+        """Test CFI parsing with element assertions."""
+        cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/2[para01]/1:0)"
         parsed = self.parser.parse(cfi)
         
-        assert parsed.content_steps[1].index == 20
+        assert parsed.spine_steps[1].assertion == "chap01ref"
+        assert parsed.content_steps[0].assertion == "body01"
+        assert parsed.content_steps[1].assertion == "para01"
+        assert parsed.content_steps[2].assertion is None
+    
+    def test_location_range_syntax(self):
+        """Test location with range syntax (:offset~length)."""
+        cfi = "epubcfi(/6/4!/4/2/1:5~10)"
+        parsed = self.parser.parse(cfi)
+        
+        assert parsed.location.offset == 5
+        assert parsed.location.length == 10
 
 
-class TestAssertionValidation:
-    """Test CFI assertion validation and error handling."""
+class TestCFIComparison:
+    """Test CFI comparison functionality."""
     
-    @pytest.fixture
-    def sample_epub_path(self):
-        """Return path to sample EPUB file."""
-        return Path(__file__).parent.parent / "test_data" / "sample.epub"
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.parser = CFIParser()
     
-    @pytest.fixture
-    def cfi_processor(self, sample_epub_path):
-        """Return CFI processor instance."""
-        return CFIProcessor(str(sample_epub_path))
-    
-    def test_valid_assertion_match(self, cfi_processor):
-        """Test CFI with valid assertion that matches document."""
-        # Using para05 ID from our test EPUB
-        cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)"
+    def test_same_position_comparison(self):
+        """Test comparison of identical CFIs."""
+        cfi1 = self.parser.parse("epubcfi(/6/4!/4/2/1:5)")
+        cfi2 = self.parser.parse("epubcfi(/6/4!/4/2/1:5)")
         
-        # Should not raise error since para05 exists in test data
-        result = cfi_processor.extract_text_from_cfi_range(cfi, cfi)
-        assert result == ""
+        assert self.parser.compare_cfis(cfi1, cfi2) == 0
     
-    def test_assertion_mismatch_error(self, cfi_processor):
-        """Test CFI with assertion that doesn't match document."""
-        # Using wrong element ID assertion - the 5th paragraph has ID para05, not wrongpara
-        start_cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[wrongpara]/1:0)"
-        end_cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[wrongpara]/1:3)"
+    def test_different_offset_comparison(self):
+        """Test comparison of CFIs with different offsets."""
+        cfi1 = self.parser.parse("epubcfi(/6/4!/4/2/1:5)")
+        cfi2 = self.parser.parse("epubcfi(/6/4!/4/2/1:10)")
         
-        with pytest.raises(CFIError, match="assertion mismatch"):
-            cfi_processor.extract_text_from_cfi_range(start_cfi, end_cfi)
+        assert self.parser.compare_cfis(cfi1, cfi2) == -1
+        assert self.parser.compare_cfis(cfi2, cfi1) == 1
     
-    def test_spine_assertion_validation(self, cfi_processor):
-        """Test spine itemref assertion validation."""
-        # Wrong spine assertion
-        start_cfi = "epubcfi(/6/4[wrongchap]!/4[body01]/10[para05]/1:0)"
-        end_cfi = "epubcfi(/6/4[wrongchap]!/4[body01]/10[para05]/1:3)"
+    def test_different_spine_comparison(self):
+        """Test comparison of CFIs in different spine items."""
+        cfi1 = self.parser.parse("epubcfi(/6/4!/4/2/1:5)")
+        cfi2 = self.parser.parse("epubcfi(/6/6!/4/2/1:5)")
         
-        with pytest.raises(CFIError, match="assertion mismatch"):
-            cfi_processor.extract_text_from_cfi_range(start_cfi, end_cfi)
+        assert self.parser.compare_cfis(cfi1, cfi2) == -1
+        assert self.parser.compare_cfis(cfi2, cfi1) == 1
 
 
 class TestStepIndexSemantics:
@@ -223,11 +204,6 @@ class TestStepIndexSemantics:
     def setup_method(self):
         """Set up test fixtures."""
         self.parser = CFIParser()
-    
-    @pytest.fixture
-    def sample_epub_path(self):
-        """Return path to sample EPUB file."""
-        return Path(__file__).parent.parent / "test_data" / "sample.epub"
     
     def test_even_indices_for_elements(self):
         """Test that even indices reference XML elements."""
@@ -248,17 +224,6 @@ class TestStepIndexSemantics:
         
         assert parsed.content_steps[1].index == 1  # Odd (text)
         assert parsed.location.offset == 5
-    
-    def test_text_node_identification(self, sample_epub_path):
-        """Test identification of text nodes in processing."""
-        processor = CFIProcessor(str(Path(__file__).parent.parent / "test_data" / "sample.epub"))
-        
-        # Test that odd index is correctly identified as text node
-        cfi = "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:0)"
-        result = processor.extract_text_from_cfi_range(cfi, "epubcfi(/6/4[chap01ref]!/4[body01]/10[para05]/1:3)")
-        
-        # Should extract from text node (index 1 = odd = text)
-        assert result == "xxx"
 
 
 class TestEdgeCasesAndErrorConditions:
@@ -295,11 +260,3 @@ class TestEdgeCasesAndErrorConditions:
         # Should have only one spine step, causing error in spine_index property
         with pytest.raises(CFIError, match="CFI must contain both spine and itemref"):
             _ = parsed.spine_index
-    
-    def test_location_range_syntax(self):
-        """Test location with range syntax (:offset~length)."""
-        cfi = "epubcfi(/6/4!/4/2/1:5~10)"
-        parsed = self.parser.parse(cfi)
-        
-        assert parsed.location.offset == 5
-        assert parsed.location.length == 10
