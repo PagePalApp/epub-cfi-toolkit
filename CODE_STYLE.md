@@ -2,6 +2,8 @@
 
 This document outlines the code style standards for the EPUB CFI Toolkit project. All contributors must follow these guidelines to maintain consistency and quality across the codebase.
 
+> **Note:** This document focuses on detailed code style specifications. For general contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -30,7 +32,8 @@ All code must pass these checks before being merged.
 
 ### Line Length
 - **Maximum line length: 95 characters** (configured in `.flake8`)
-- Black is configured with 88 characters, but flake8 allows up to 95 for flexibility
+- **Black formatting: 88 characters** (configured in `pyproject.toml`)
+- flake8 allows up to 95 characters to accommodate cases where Black's 88-character formatting still produces lines slightly over 88 characters
 - Long lines should be broken using Black's automatic formatting
 
 ### String Quotes
