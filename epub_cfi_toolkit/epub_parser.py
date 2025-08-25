@@ -102,9 +102,9 @@ class EPUBParser:
             if manifest is not None:
                 for item in manifest.findall("opf:item", ns):
                     manifest_item = ManifestItem(
-                        id=item.get("id"),
-                        href=item.get("href"),
-                        media_type=item.get("media-type"),
+                        id=item.get("id") or "",
+                        href=item.get("href") or "",
+                        media_type=item.get("media-type") or "",
                         properties=item.get("properties"),
                     )
                     self._manifest[manifest_item.id] = manifest_item
@@ -115,7 +115,7 @@ class EPUBParser:
                 for i, itemref in enumerate(spine.findall("opf:itemref", ns)):
                     spine_item = SpineItem(
                         id=itemref.get("id", f"spine_item_{i}"),
-                        idref=itemref.get("idref"),
+                        idref=itemref.get("idref") or "",
                         linear=itemref.get("linear", "yes") == "yes",
                     )
                     self._spine.append(spine_item)
