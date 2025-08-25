@@ -30,12 +30,13 @@ jobs:
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 epub_cfi_toolkit --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 epub_cfi_toolkit --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # run full flake8 check (matches CD workflow) - no exit-zero to catch all errors
+        flake8 epub_cfi_toolkit
     
     - name: Type check with mypy
       run: |
-        mypy epub_cfi_toolkit --ignore-missing-imports
+        # run mypy without --ignore-missing-imports (matches CD workflow)
+        mypy epub_cfi_toolkit
     
     - name: Test with pytest
       run: |
